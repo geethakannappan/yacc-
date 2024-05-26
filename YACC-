@@ -1,0 +1,102 @@
+YACC program:
+1.Declaration of header files
+2.Declare structure for three address code representation having fields of argument1, argument2, operator, result.
+3.Declare pointer of char type in union.
+4.Declare token expr of type pointer p.
+5.Give precedence to „*‟,‟/‟ „+‟,‟-‟.
+6.End of declaration section by %%.
+7.If final expression evaluates then add it to the table of three address code.
+8.If input type is expression of the form.
+
+a. exp‟+‟exp then add to table the argument1, argument2, operator. b.exp‟-‟exp then add to table the argument1, argument2, operator.
+
+
+c. exp‟*‟exp then add to table the argument1, argument2, operator. d.exp‟/‟exp then add to table the argument1, argument2, operator.
+e. „(„exp‟)‟ then assign $2 to $$.
+f. Digit OR Letter then assigns $1 to $$.
+9.End the section by %%.
+10.Declare file *yyin externally.
+11.Declare main function and call yyparse function untill yyin ends
+12.Declare yyerror for if any error occurs.
+
+THREE ADDRESS CODE GENERATION USING LEX AND YACC
+
+
+YACC PROGRAM
+
+/*(Yacc Program : inter.y)*/
+%token ID NUM
+%right '='
+%left '+' '-'
+%left '*' '/'
+%left UMINUS
+%%
+S:ID{push();} '='{push();} E{codegen_assign();}
+;
+E:E'+'{push();} T{codegen();}
+|E'-'{push();} T{codegen();}
+| T
+;
+T:T'*'{push();} F{codegen();}
+|T'/'{push();} F{codegen();}
+|F
+;
+F:'(' E ')'
+|'-'{push();} F{codegen_umin();} %prec UMINUS
+|ID{push();}
+|NUM{push();}
+;
+%%
+#include "lex.yy.c" #include<ctype.h> char st[100][10];
+
+
+int top=0;
+char i_[2]="0";
+char temp[2]="t"; main()
+{
+printf("Enter the expression : "); yyparse();
+}
+push()
+{
+strcpy(st[++top],yytext);
+}
+codegen()
+{
+strcpy(temp,"t"); strcat(temp,i_);
+printf("%s = %s %s %s\n",temp,st[top-2],st[top-1],st[top]); top-=2;
+strcpy(st[top],temp); i_[0]++;
+}
+codegen_umin()
+{
+strcpy(temp,"t"); strcat(temp,i_);
+printf("%s = -%s\n",temp,st[top]); top--;
+strcpy(st[top],temp); i_[0]++;
+}
+codegen_assign()
+{
+printf("%s = %s\n",st[top-2],st[top]); top-=2;
+}
+
+LEX PROGRAM
+
+/*(Lex Program : inter.l)*/ ALPHA [A-Za-z]
+
+
+DIGIT [0-9]
+
+%%
+
+{ALPHA}({ALPHA}|{DIGIT})* return ID;
+
+{DIGIT}+ {yylval=atoi(yytext); return NUM;} [\n\t] yyterminate();
+. return yytext[0];
+
+%%
+
+
+
+OUTPUT:
+
+nn@linuxmint ~ $ lex inter.l nn@linuxmint ~ $ yacc inter.y nn@linuxmint ~ $ gcc y.tab.c -ll -ly nn@linuxmint ~ $ ./a.out
+Enter the expression : a=(k+8)*(c-s) t0 = k + 8
+t1 = c - s t2 = t0 * t1 a = t2
